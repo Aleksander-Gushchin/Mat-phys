@@ -157,7 +157,7 @@ public:
     auto second_part = [&](double x) {
       return q * (basis.get_value(i, x) * basis.get_value(j, x));
     };
-    std::cout << "Index i,j " << i << "," << j << " value: " << integrate(first_part, first, last, 10) + integrate(second_part, first, last, 10) << "\n";
+    
     return integrate(first_part, first, last, 100) + integrate(second_part, first, last, 100);
   }
 
