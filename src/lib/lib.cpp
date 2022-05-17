@@ -47,6 +47,9 @@ double integrate(std::function<double(double)> func, double x0, double x1, doubl
 
 double integrate(std::function<double(double)> func, double x0, double x1, int n)
 {
+  if (!func)
+    throw std::exception("empty lambda");
+
   double res = 0;
 
   double h = (x1 - x0) / n;

@@ -3,7 +3,7 @@
 #include <vector>
 #include <functional>
 #include <iostream>
-
+#include <stdexcept>
 
 
 double integrate(std::function<double(double)> func, double x0, double x1, double h);
@@ -38,6 +38,20 @@ public:
   virtual double get_value(int i, double x) const = 0;
   virtual double get_deriv(int i, double x) const = 0;
 
+  double get_func(const std::vector<double>& c_vec, double x) {
+    if (range.size() != c_vec.size())
+      throw std::invalid_argument("Wrong size of c");
+
+    int size = range.size();
+    double res = 0;
+
+    for (int i = 0; i < size; ++i) {
+      res += get_value(i, x);
+    }
+
+    return res;
+  }
+
   virtual ~BaseBasis();
 };
 
@@ -49,26 +63,32 @@ public:
   SimpleBasis(SimpleBasis&& basis) : BaseBasis(std::move(basis)) {};
   SimpleBasis(const SimpleBasis& basis) : BaseBasis(basis) {};
 
+  //return x[i-1], x[i+1] if posible
   std::pair<double, double> get_range(int i) const {
     return std::make_pair(range[std::max(0, i - 1)], range[std::min(i + 1, size() - 1)]);
   }
 
   double get_value(int i, double x)  const override  {
+    if (i < 0 || i  > size() - 1)
+      return 0;
     if (i - 1 >= 0 && x >= range[i - 1] && x <= range[i])
       return (x - range[i - 1]) / (range[i] - range[i - 1]);
-    if (i + 1 < size() - 1 && x >= range[i] && x <= range[i + 1])
+    if (i + 1 <= size() - 1 && x >= range[i] && x <= range[i + 1])
       return (range[i + 1] - x) / (range[i + 1] - range[i]);
     return 0;
 
   };
 
   double get_deriv(int i, double x) const override {
+    if (i < 0 || i > size() - 1)
+      return 0;
     if (i - 1 >= 0 && x >= range[i - 1] && x <= range[i])
       return 1 / (range[i] - range[i - 1]);
-    if (i + 1 < size() - 1 && x >= range[i] && x <= range[i + 1])
+    if (i + 1 <= size() - 1 && x >= range[i] && x <= range[i + 1])
       return -1 / (range[i + 1] - range[i]);
     return 0;
   }
+
 };
 
 
@@ -128,19 +148,32 @@ public:
   PQCalc(const T& _basis, function _p, function _f, double _q) : BaseCalc(_basis), p(_p), q(_q), f(_f) {};
   PQCalc(T&& _basis, function _p, function _f, double _q) : BaseCalc(std::move(_basis)), p(_p), q(_q), f(_f) {};
 
-  //TODO
-  std::pair<double, double> get_first_a() { return std::make_pair(0, 0); };
-  std::pair<double, double> get_last_a() { return std::make_pair(0, 0); };
-
   double get_a(int i, int j) override {
     auto [first, last] = basis.get_range(i);
-    return 0;
+    auto first_part = [&](double x) {
+      return p(x) * (basis.get_deriv(i, x) * basis.get_deriv(j, x));
+    };
+
+    auto second_part = [&](double x) {
+      return q * (basis.get_value(i, x) * basis.get_value(j, x));
+    };
+    
+    return integrate(first_part, first, last, 100) + integrate(second_part, first, last, 100);
+  }
+
+  std::pair<double, double> get_first_a() override {
+    return std::make_pair(get_a(0, 0) + p(0), get_a(0, 1));
+  }
+
+  std::pair<double, double> get_last_a() override {
+    int size = basis.size();
+    return std::make_pair(get_a(size -1, size - 2), get_a(size - 1, size - 1));
   }
 
   double get_l(int i) override {
     auto [first, last] = basis.get_range(i);
     auto tmp_la = [=](double x) {
-      return f(x)* basis.get_value(i, x);
+      return f(x) * basis.get_value(i, x);
     };
 
     return integrate(tmp_la, first, last, 100);
