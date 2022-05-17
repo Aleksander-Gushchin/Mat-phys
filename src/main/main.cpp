@@ -1,7 +1,8 @@
 #include "lib.h"
 #include <iostream>
 #include <cmath>
-
+#include <numeric>
+#include <algorithm>
 
 
 
@@ -10,7 +11,11 @@
 
 int main()
 {
-  SimpleBasis basis({ 0.0, 0.5, 1 });
+  const int size = 1001;
+  std::vector<double> vec(size, 0.0);
+  std::iota(vec.begin(), vec.end(), 0);
+  std::for_each(vec.begin(), vec.end(), [&](double& x) {x /= (size - 1); });
+  SimpleBasis basis(std::move(vec));
 
   //for (int j = 0; j < 4; ++j) {
   //  for (int i = 0; i <= 10; ++i)
