@@ -135,8 +135,8 @@ public:
       //matrix.set(i, i, get_a(i, i));
       //matrix.set(i, i + 1, get_a(i, i + 1));
       matrix.set_A(i, get_a(i + 1, i));
-      matrix.set_B(i, get_a(i + 1, i + 1));
-      matrix.set_C(i, get_a(i + 1, i + 2));
+      matrix.set_C(i, get_a(i + 1, i + 1));
+      matrix.set_B(i, get_a(i + 1, i + 2));
     }
 
     //matrix.set(size - 1, size - 2, a_last.first);
