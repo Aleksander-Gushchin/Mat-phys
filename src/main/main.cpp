@@ -36,8 +36,31 @@ int main()
   
   PQCalc cl(basis, [](double x) {return sin(x); }, [](double x) { return x*(1 - x); },  1.0);
 
-  calc.find_sol();
+  std::vector<double> res = calc.find_sol();
+
+  for (double v: res) {
+    std::cout << v << std::endl;
+  }
 
   //std::cout << integrate([](double x) {return sin(x); }, 0, 1, 1e-2) << "\n";
+
+  /*TridMatrix test(4);
+  test.setXi1(-1./2.);
+  test.setXi2(-1./4.);
+  test.set_A(0, 1.);
+  test.set_C(0, 10.);
+  test.set_B(0, -5.);
+  test.set_A(1, 1.);
+  test.set_C(1, -5.);
+  test.set_B(1, 2.);
+  std::vector<double> fi(4);
+  fi[0] = -5./2.;
+  fi[1] = -18.;
+  fi[2] = -40.;
+  fi[3] = -27./4.;
+
+  for(double v: test.trid_matrix_alg(fi)) {
+    std::cout << v << std::endl;
+  }*/
   return 0;
 }

@@ -12,6 +12,10 @@ double integrate(std::function<double(double)> func, double x0, double x1, int n
 class TridMatrix {
 private:
   std::vector<double> data;
+
+  double xi1, xi2;
+  double mu1, mu2;
+
   int size;
 
   double get_A(int i);
@@ -20,9 +24,14 @@ private:
 public:
   TridMatrix(int _size);
   void set(int i, int j, double val); 
+  void setXi1(double val);
+  void setXi2(double val);
+  void set_A(int i, double val);
+  void set_B(int i, double val);
+  void set_C(int i, double val);
   ~TridMatrix();
 
-  std::vector<double> trid_matrix_alg(std::vector<double>& vec); // метод прогонки
+  std::vector<double> trid_matrix_alg(std::vector<double>& fi); // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 };
 
 class BaseBasis {
@@ -118,21 +127,29 @@ public:
     auto a_first = get_first_a();
     auto a_last = get_last_a();
 
-    matrix.set(0, 0, a_first.first);
-    matrix.set(0, 1, a_first.second);
+    //matrix.set(0, 0, a_first.first);
+    //matrix.set(0, 1, a_first.second);
 
-    for (int i = 1; i < size - 1; ++i) {
-      matrix.set(i, i - 1, get_a(i, i - 1));
-      matrix.set(i, i, get_a(i, i));
-      matrix.set(i, i + 1, get_a(i, i + 1));
+    for (int i = 0; i < size - 2; ++i) {
+      //matrix.set(i, i - 1, get_a(i, i - 1));
+      //matrix.set(i, i, get_a(i, i));
+      //matrix.set(i, i + 1, get_a(i, i + 1));
+      matrix.set_A(i, get_a(i + 1, i));
+      matrix.set_B(i, get_a(i + 1, i + 1));
+      matrix.set_C(i, get_a(i + 1, i + 2));
     }
 
-    matrix.set(size - 1, size - 2, a_last.first);
-    matrix.set(size - 1, size - 1, a_last.second);
+    //matrix.set(size - 1, size - 2, a_last.first);
+    //matrix.set(size - 1, size - 1, a_last.second);
 
     for (int i = 0; i < size; ++i) {
       l_vec[i] = get_l(i);
     }
+
+    matrix.setXi1(-a_first.second / a_first.first);
+    l_vec[0] /= a_first.first;
+    matrix.setXi2(-a_last.first / a_last.second);
+    l_vec[size - 1] /= a_last.second;
 
     return matrix.trid_matrix_alg(l_vec);
   };
@@ -145,17 +162,17 @@ private:
   function f;
   double q;
 public:
-  PQCalc(const T& _basis, function _p, function _f, double _q) : BaseCalc(_basis), p(_p), q(_q), f(_f) {};
-  PQCalc(T&& _basis, function _p, function _f, double _q) : BaseCalc(std::move(_basis)), p(_p), q(_q), f(_f) {};
+  PQCalc(const T& _basis, function _p, function _f, double _q) : BaseCalc<T>(_basis), p(_p), q(_q), f(_f) {};
+  PQCalc(T&& _basis, function _p, function _f, double _q) : BaseCalc<T>(std::move(_basis)), p(_p), q(_q), f(_f) {};
 
   double get_a(int i, int j) override {
-    auto [first, last] = basis.get_range(i);
+    auto [first, last] = this->basis.get_range(i);
     auto first_part = [&](double x) {
-      return p(x) * (basis.get_deriv(i, x) * basis.get_deriv(j, x));
+      return p(x) * (this->basis.get_deriv(i, x) * this->basis.get_deriv(j, x));
     };
 
     auto second_part = [&](double x) {
-      return q * (basis.get_value(i, x) * basis.get_value(j, x));
+      return q * (this->basis.get_value(i, x) * this->basis.get_value(j, x));
     };
     
     return integrate(first_part, first, last, 100) + integrate(second_part, first, last, 100);
@@ -166,14 +183,14 @@ public:
   }
 
   std::pair<double, double> get_last_a() override {
-    int size = basis.size();
+    int size = this->basis.size();
     return std::make_pair(get_a(size -1, size - 2), get_a(size - 1, size - 1));
   }
 
   double get_l(int i) override {
-    auto [first, last] = basis.get_range(i);
+    auto [first, last] = this->basis.get_range(i);
     auto tmp_la = [=](double x) {
-      return f(x) * basis.get_value(i, x);
+      return f(x) * this->basis.get_value(i, x);
     };
 
     return integrate(tmp_la, first, last, 100);
